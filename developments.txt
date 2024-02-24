@@ -1,0 +1,28 @@
+Message date ok 
+Message css ok 
+mobile uyum ok
+Rate limit ok
+Pm ok
+mesajlari get ile al ok
+ban ok
+unban ok
+socket ban checking ok
+botu bagla ok
+password hash ok
+online status ok
+Bot (ban,unban,help) ok
+history (date and last message) ok
+typing ok
+mesajlari karsilikli yap ok         
+read ok
+msg notifiaction ok 
+
+File Upload 
+csrf koruma 
+iframe koruma 
+profile photo 
+E2EE
+
+
+
+

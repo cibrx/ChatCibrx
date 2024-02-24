@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write A Blog</title>
+    <link rel="icon" href="/img/logo.png">
+    <style>
+        /* Tam Sayfa Stili */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .form-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .input-group {
+            width: 100%;
+            margin-bottom: 20px;
+            width: 900px;
+        }
+
+        .input-group label {
+            font-size: 20px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 18px;
+            box-sizing: border-box;
+        }
+
+        .input-group textarea {
+            height: 70%; /* Yükseklik artık sayfanın %70'ini kaplayacak */
+            resize: none; /* Kullanıcı tarafından yeniden boyutlandırma devre dışı */
+        }
+
+        .submit-btn {
+            padding: 20px;
+            width: 100%;
+            font-size: 20px;
+            border-radius: 4px;
+            border: none;
+            color: #fff;
+            background-color: #007bff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="form-container">
+        <h2>Blog Yazısı Gönder</h2>
+        <form id="blogForm" method="POST" action="/blog/new">
+            <div class="input-group">
+                <label for="title">Başlık</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div class="input-group">
+                <label for="topic">Konu</label>
+                <input type="text" id="topic" name="topic" required>
+            </div>
+            <div class="input-group">
+                <label for="content">Blog Yazısı</label>
+                <textarea id="content" name="content" rows="15" required></textarea>
+            </div>
+            <button type="submit" class="submit-btn">Gönder</button>
+        </form>
+        <br>
+        <label id="upload-status" style="text-align: center;"></label>
+        <br>
+        <a href="/blog">&lt;back</a>
+    </div>
+
+    <script>
+        document.getElementById('blogForm').addEventListener('submit', function(event) {
+            event.preventDefault()
+
+            var form = document.getElementById('blogForm');
+            var formData = new FormData(form);
+
+            fetch('/blog/new',{
+                method: "POST",
+                headers: {'Content-Type':'application/x-www-form-urlencoded'},
+                body: new URLSearchParams(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success){
+                    document.getElementById('upload-status').innerText = data.message
+                    document.getElementById('upload-status').style.color = 'green'
+                } else {
+                    document.getElementById('upload-status').innerText = data.message
+                    document.getElementById('upload-status').style.color = 'red'
+                }
+            })
+            .catch(err => {
+                console.error(err)
+            })
+
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sol Sidebar ve Ana İçerik</title>
+    <style>
+        .container {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 200px; /* Sidebar genişliği */
+            background-color: #f4f4f4; /* Sidebar arka plan rengi */
+            height: 100vh; /* Tam ekran boyu */
+        }
+
+        .main-content {
+            flex-grow: 1; /* Kalan tüm genişliği kaplar */
+            background-color: #fff; /* Ana içerik arka plan rengi */
+            padding: 20px; /* İçerik etrafında boşluk */
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar">
+        <!-- Sidebar içeriği buraya -->
+        Sidebar İçeriği
+    </div>
+    <div class="main-content">
+        <!-- Ana içerik buraya -->
+        Ana İçerik Alanı. Bu kısım, sol taraftaki sidebar'dan bağımsız olarak içeriği gösterir ve birbirlerine karışmazlar.
+    </div>
+</div>
+
+</body>
+</html>

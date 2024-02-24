@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Cibrx</title>
+    <link rel="stylesheet" media="screen and (max-width: 600px)" href="/style/style_mobile.css">
+    <link rel="stylesheet" href="/style/home_style.css">
+    <link rel="stylesheet" media="screen and (min-width: 600px)" href="/style/style_pc.css">
+    <link rel="icon" href="/img/logo.png">
+</head>
+
+<body>
+    <div class="sidebar">
+        <a href="/chat"><img src="/img/live-chat.png" alt="Chat"></a>
+        <a href="/blog"><img src="/img/blog_icon.png" alt="Blog"></a>
+        <a href="/profile"><img src="/img/account_icon.png" alt="Profile"></a>
+        <a href="/home"><img src="/img/icons8-home-50.png" alt="Home"></a>
+    </div>
+
+    <div id="notification-container" class="notification-container"></div>
+    <div class="profile-logout-section">
+        <label id="username" style="font-family:verdana;text-align: left;"><img src="/img/user.png" height="25"
+                width="25"><%-username %>
+        </label>
+        <h2 class="title">Chat Cibrx<span class="font-circle">●</span></h2>
+        <!-- <a href="/logout"><img src="/img/logout.png" width="25 " height="25"></a> -->
+    </div>
+
+    <div class="container">
+        <div class="left-panel">
+            <input type="text" id="search-user" placeholder="Search User 🔍">
+            <label>History:</label><br><br>
+            <div id="chat-history" class="chat-history"></div><br>
+            <label>Groups: </label><br><br>
+            <div id="chat-button" class="chat-button" onclick="showGroupMessage()">
+                <span id="chat-button-name-global" class="chat-button-name">Global Chat</span>
+                <span id="chat-button-last-msg-global" class="chat-button-last-msg" style="white-space: nowrap;overflow: hidden; text-overflow: ellipsis;"></span>
+                <span id="chat-button-date-global" class="chat-button-date"></span>
+            </div>
+            <br><label>Users: </label>
+            <div id="user-list"></div>
+        </div>
+
+        <div class="right-panel">
+            <div class="group-panel"><img id="group-img" src="/img/user.png" height="25" width="25"><span
+                    id="group-name"></span><span class="group-online" id="group-online"></span></div>
+            <div id="messages" class="messages">
+
+                <ul id="messagesList"></ul>
+
+                <div class="indexAd" id="indexAd">
+                    <h2 class="title">Chat Cibrx<span class="font-circle">●</span></h2>
+                    <img src="/img/indexAd.png" width="500px" height="500px" style="object-fit: cover;">
+                    <p>Send and receive messages without keeping your device online.</p>
+                </div>
+            </div>
+            <div class="input-container">
+                <form id="form">
+                    <input id="send-msg-input" autocomplete="off" class="input" placeholder="Type a message" />
+                    <button id="send-msg-button" class="button"><img src="/img/send.png" width="20" height="20"></button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/script/jquery-3.6.0.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/script/he.js"></script>
+    <script src="/script/sweetalert2.js"></script>
+    <script src="https://rawgit.com/leizongmin/js-xss/master/dist/xss.js"></script>
+
+    <script>
+        const current_username = document.getElementById("username");
+        const messagesDiv = document.getElementById("messages");
+        const messagesList = document.getElementById("messagesList");
+        const searchUser = document.getElementById("search-user")
+        const userList = document.getElementById("user-list")
+        const receiverName = document.getElementById("group-name")
+        const indexAd = document.getElementById("indexAd")
+        const sendButton = document.getElementById("send-msg-button")
+        const sendInput = document.getElementById("send-msg-input")
+        const groupImg = document.getElementById("group-img")
+        const chatHistory = document.getElementById("chat-history")
+        const userInput = document.getElementById('search-user');
+        const groupOnline = document.getElementById('group-online')
+        const socket = io()
+        let debounceTimeout
+
+
+        let typingTimer
+        let lastEmitTime = 0;
+        const emitInterval = 2000;
+
+
+        sendButton.style.display = 'none'
+        sendInput.style.display = 'none'
+        groupImg.style.display = 'none'
+        searchUser.innerText = ''
+
+        $(function () {
+
+            $('form').submit(function (e) {
+                e.preventDefault();
+                if (document.getElementById("send-msg-input").value?.trim() !== '') {
+                    if (receiverName.innerText == 'Global Chat') {
+                        socket.emit('group message', $('#send-msg-input').val(), current_username.innerText, receiverName.innerText)
+                    } else {
+                        socket.emit('private message', $('#send-msg-input').val(), current_username.innerText, receiverName.innerText)
+                        socket.emit('readAt', current_username.innerText, receiverName.innerText, false)
+                    }
+                    $('#send-msg-input').val('')
+                    typingAnimation('empty')
+
+                }
+                return false;
+            });
+
+            socket.on('group message', function (msg, sender, receiver, dateNow) {
+                if (receiverName.innerText == 'Global Chat') {
+                    printMessages(msg, sender, receiver, dateNow)
+                } else {
+                    addNotification(`group[${sender}]`,msg)
+                }
+
+            });
+
+            socket.on('private message', function (msg, sender, receiver, dateNow) {
+                if (receiverName.innerText == sender || receiverName.innerText == receiver ) {
+                    printMessages(msg, sender, receiver, dateNow)
+                    
+                } else {
+                    addNotification(sender,msg)
+                }
+            })
+
+            socket.on('online', function (online) {
+                if (receiverName.innerText !== 'Global Chat'){
+                    groupOnline.innerText = `Online: ${online}`
+                }
+            })
+
+            socket.on('typing', (chatType, sender, receiver, isTyping) => {
+                if(current_username.innerText !== sender){
+                    if(sender == receiverName.innerText && chatType == 'Pm' && isTyping == 'true'){
+                    isTypingTrue(sender)
+                    } else if(receiverName.innerText == chatType && isTyping == 'true'){
+                    isTypingTrue(sender)
+                    } else isTypingFalse()
+                }
+            })
+
+            socket.on('readAt', (reader, readStatus) => {
+                listItems = messagesList.getElementsByTagName('li')
+                lastItem  = listItems[listItems.length - 1]
+                if(receiverName.innerText == reader && readStatus['read'] == true && lastItem.className == 'senderMessage'){
+                    printReadAt(readStatus['time'])
+                    
+                }
+            })
+        });
+
+
+        function clearDisplay() {
+            groupImg.style.display = ''
+            sendButton.style.display = ''
+            sendInput.style.display = ''
+            messagesList.innerHTML = ''
+            indexAd.innerHTML = ''
+        }
+
+
+        function showPrivateMessages(receiver) {
+            clearDisplay()
+            receiverName.innerText = receiver
+            fetch(`/getPrivateMessages/${receiver}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok')
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    data.messages.forEach(msgData => {
+                        printMessages(he.decode(msgData.msg), he.decode(msgData.sender), he.decode(msgData.receiver), msgData.time)
+                    })
+
+                    listItems = messagesList.getElementsByTagName('li')
+                    lastItem  = listItems[listItems.length - 1]
+
+
+                    if(data.readby && data.readby.read && lastItem.className == 'senderMessage'){
+                        printReadAt(data.readby.time)
+                    }
+                    socket.emit('readAt', receiver, current_username.innerText, true) // read by current username
+                })
+                .catch(error => {
+                    console.error(error)
+                })
+        }
+
+
+        function showGroupMessage() {
+            fetch(`/getGroupMessages`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if(data.error){
+                        Swal.fire({
+                            icon: "error",
+                            title: data.message,
+                            text: `Reason: ${data.reason}\nDuration: ${data.duration}\nDate: ${getCurrentDateTime(data.date)} `,
+                        });                      
+                    } else {
+                        clearDisplay()
+                        receiverName.innerText = 'Global Chat'
+                        data.messages.forEach(msgData => {
+                            printMessages(he.decode(msgData.msg), he.decode(msgData.sender), he.decode(msgData.receiver), msgData.time)
+                        })
+                    }
+                })
+                .catch(error => {
+                    console.error(error);        
+                });
+        }
+
+
+        function getSearchUser() {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(function () {
+                if (userInput.value.length > 0) {
+                    fetch(`/search-user/${userInput.value}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            userList.innerHTML = '<br>'
+                            data.forEach(user => {
+                                var userButton = document.createElement('button')
+                                userButton.id = userButton.innerText = he.decode(user['username'])
+                                userButton.onclick = function() {
+                                    showPrivateMessages(userButton.innerText);
+                                };
+
+                                userList.appendChild(userButton)
+                            })
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                }
+            }, 500);
+        }
+
+
+        function getChatHistory() {
+            fetch(`/chat-history/${current_username.innerText}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    data.private.forEach(tempMsg => {
+                        var msgTime = new Date(tempMsg['time'])
+                        chatButton = document.createElement('div')
+                        chatButtonName = document.createElement('span')
+                        chatButtonLastMsg = document.createElement('span')
+                        chatButtonDate = document.createElement('span')
+
+                        chatButton.className = 'chat-button'
+                        chatButtonName.className = 'chat-button-name'
+                        chatButtonLastMsg.className = 'chat-button-last-msg'
+                        chatButtonDate.className = 'chat-button-date'
+                        
+                        
+
+                        if (tempMsg['sender'] == current_username.innerText) {
+                            tempMsg['sender'] = 'you'
+                            chatButton.id = chatButtonName.innerText = he.decode(tempMsg['receiver'])
+                        } else chatButton.id = chatButtonName.innerText = he.decode(tempMsg['sender'])
+                        
+
+                        chatButton.onclick = function() {
+                            showPrivateMessages(this.id);
+                        };
+
+                        chatButtonLastMsg.innerText = `${he.decode(tempMsg['sender'])}: ${he.decode(tempMsg['msg'])}`
+                        chatButtonDate.innerText = `${msgTime.getHours()}:${msgTime.getMinutes()}`
+
+
+
+                        chatButton.append(chatButtonName,chatButtonLastMsg,chatButtonDate)
+                        chatHistory.appendChild(chatButton)
+                    })
+
+
+                    data.global.forEach(tempMsg => {
+                        var msgTime = new Date(tempMsg['time'])
+                        
+                        const lastMsg = document.getElementById('chat-button-last-msg-global')
+                        const dateMsg = document.getElementById('chat-button-date-global')
+
+                        if (tempMsg['sender'] == current_username.innerText) {
+                            tempMsg['sender'] = 'you'
+                        }
+                        
+                        lastMsg.innerText = `${he.decode(tempMsg['sender'])}: ${he.decode(tempMsg['msg'])}`
+                        dateMsg.innerText = `${msgTime.getHours()}:${msgTime.getMinutes()}`
+
+                    })
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        }
+
+        function getCurrentDateTime(time) {
+            var currentDate = new Date(time);
+            
+            var day = currentDate.getDate();
+            var month = currentDate.toLocaleString('default', { month: 'short' });
+            var year = currentDate.getFullYear();
+            
+            var hours = currentDate.getHours();
+            var minutes = currentDate.getMinutes();
+            var seconds = currentDate.getSeconds();
+            
+            var formattedDateTime = `${day} ${month} ${year} ${hours}:${minutes}:${seconds}`;
+            
+            return formattedDateTime;
+        }
+
+
+        function typingAnimation(isTypingStatus){
+            let chatType = 'Pm'
+            if(receiverName.innerText == 'Global Chat') {
+                chatType = 'Global Chat'
+            }    
+            if (isTypingStatus == "full" && sendInput.value !== ''){
+                socket.emit('typing', chatType, current_username.innerText, receiverName.innerText, "true")
+            }
+            else if (isTypingStatus == "empty"){
+                socket.emit('typing', chatType, current_username.innerText, receiverName.innerText, "false")
+            }
+        }
+
+        function isTypingTrue(sender){
+            isTypingFalse()
+            var typingBubble = document.createElement('div')
+            typingBubble.id = 'typing-bubble'
+            typingBubble.className = 'typing-bubble'
+
+            var label = document.createElement('label')
+            label.id = 'typing-label-name'
+            label.innerText = sender
+            label.style.fontWeight = 'bold'
+            typingBubble.appendChild(label)
+
+            var typing = document.createElement('div')
+            typing.className = 'typing'
+
+            for (var i = 0; i < 3; i++){
+                var dot = document.createElement('div')
+                dot.className = 'dot'
+                typing.appendChild(dot)
+            }
+
+            typingBubble.appendChild(typing)
+            messagesList.appendChild(typingBubble)
+
+            typingBubble.scrollIntoView(true)
+        }
+
+        function isTypingFalse(){
+            var typingBubble = document.getElementById('typing-bubble')
+            if (typingBubble){
+                typingBubble.remove()
+            }
+
+        }
+
+        function addNotification(sender, message) {
+            var container = document.getElementById('notification-container');
+            var notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = `${sender}: ${message}`;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                container.removeChild(notification);
+            }, 1500); // Opacity animasyonu tamamlandıktan sonra elemanı kaldır
+            }, 2000); // 3 saniye sonra kaybolma işlemi başlar
+        }
+
+        function printMessages(message, sender, receiver, dateNow) {
+            dateNow = new Date(dateNow)
+            const listElement = document.createElement('li')
+            const spanSender = document.createElement('span')
+            const br = document.createElement('br')
+            const spanMessage = document.createElement('span')
+            const spanDateNow = document.createElement('span')
+
+            spanSender.className = 'sender'
+            spanMessage.className = 'message'
+            spanDateNow.className = 'dateNow'
+
+            if (sender == current_username.innerText) {
+                listElement.className = 'senderMessage'
+                
+            } else {
+                listElement.className = 'receiverMessage'
+                socket.emit('readAt', receiverName.innerText , current_username.innerText, true)
+            }
+
+            spanSender.innerText = sender
+            spanMessage.innerText = message
+            spanDateNow.innerText = `${dateNow.getHours() + ":" + dateNow.getMinutes()}`
+
+            listElement.append(spanSender, br, spanMessage, spanDateNow)
+            messagesList.appendChild(listElement)
+            listElement.scrollIntoView(true)
+
+            if(document.getElementById('readAt')){
+                document.getElementById('readAt').remove()
+            }
+        }
+
+
+        function printReadAt(dateNow) {
+            dateNow = new Date(dateNow)
+            const readAt = document.createElement('li')
+            readAt.id = 'readAt'
+            readAt.innerText = `read at ${dateNow.getHours() + ":" + dateNow.getMinutes()}`
+            readAt.className = 'readAt'
+            messagesList.appendChild(readAt)
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            getChatHistory();
+        })
+
+        document.getElementById('search-user').addEventListener('input', getSearchUser)
+    
+
+        sendInput.addEventListener('keydown', () => {
+            const currentTime = Date.now()
+            if(currentTime - lastEmitTime > emitInterval){
+                typingAnimation('full')
+                lastEmitTime = currentTime
+            }
+
+            clearTimeout(typingTimer)
+            typingTimer = setTimeout(() => {
+                typingAnimation('empty')
+            }, 3000)
+
+        })
+        
+
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog</title>
+    <link rel="stylesheet" href="/style/home_style.css">
+    <link rel="icon" href="/img/logo.png">
+    <style>
+        body, html {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .content {
+            margin-left: 250px;
+            padding: 1px 16px;
+            height: 1000px;
+        }
+
+        @media screen and (max-height: 450px) {
+            .sidebar {padding-top: 15px;}
+            .sidebar a {font-size: 18px;}
+        }
+
+        .powered-by {
+            text-align: center;
+            margin: 20px 0;
+            color: rgb(56, 56, 56);
+            font-size: 14px;
+        }
+
+
+
+        .blog-post {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+
+        header, .content, footer {
+            width: 80%;
+            max-width: 1200px; /* Maksimum genişlik */
+            margin: 20px auto;
+        }
+        header {
+            text-align: center;
+        }
+        .button-panel {
+            display: flex;
+            justify-content: center;
+            border: 1px solid #222323;
+            background-color: #222323;
+        }
+
+
+
+        .button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            background-color: #222323;
+            color: #ffffff;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .button:hover {
+            background-color: #3f3e3e;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <a href="/chat"><img src="/img/live-chat.png" alt="Chat"></a>
+        <a href="/blog"><img src="/img/blog_icon.png" alt="Blog"></a>
+        <a href="/profile"><img src="/img/account_icon.png" alt="Profile"></a>
+        <a href="/home"><img src="/img/icons8-home-50.png" alt="Home"></a>
+    </div>
+    
+    <header>
+        <img src="/img/blog_logo.png" alt="Logo" style="max-width: 100%; height: auto;">
+    </header>
+
+    <div id="content" class="content">
+        <div class="button-panel">
+            <a href="#" class="button">Ana Sayfa</a>
+            <a href="#" class="button">Siber Güvenlik</a>
+            <a href="#" class="button">Linux & Open Source</a>
+            <a href="#" class="button">Hakkımda</a>
+            <a href="/blog/new" class="button"><img src="/img/add.png" alt="add_new" width="15px" height="15px"></a>
+        </div>
+    </div>
+
+    <footer>
+    <p style="text-align: center;">&copy; 2024 Cibrx Security. Tüm hakları saklıdır.</p>
+    </footer>   
+
+    <script src="https://rawgit.com/leizongmin/js-xss/master/dist/xss.js"></script>
+    <script>
+        function loadBlogs(filter){
+            fetch(`/blog/filter/${filterXSS(filter)}`,{
+                method: "GET"
+            })
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(blog => {
+                    const div = document.createElement('div')
+                    const writtenBy = document.createElement('p')
+                    const h1 = document.createElement('h1')
+                    const p = document.createElement('p')
+                    const br = document.createElement('br')
+                    const textWrittenBy = getWrittenBy(blog.time, blog.author)
+                    
+
+                    div.className = 'blog-post'
+                    writtenBy.innerText = textWrittenBy
+                    h1.innerText = filterXSS(blog.title)
+                    p.innerText = filterXSS(blog.content)
+
+                    div.append(h1, writtenBy, br, p)
+                    document.getElementById('content').append(div)
+
+                })
+            })
+            .catch(err => {
+                console.error(err)
+            })
+        }
+
+        function getWrittenBy(dateNow, author){
+            const blogDate = new Date(dateNow)
+            return `${blogDate.getDay()}/${blogDate.getMonth()}/${blogDate.getFullYear()} by ${filterXSS(author)}`
+        }
+
+        document.addEventListener('DOMContentLoaded', loadBlogs('all'))
+    </script>
+
+</body>
+</html>

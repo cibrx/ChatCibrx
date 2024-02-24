@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="/style/login_style.css">
+    <link rel="icon" href="/img/logo.png">
+</head>
+    <div class="container">
+        <h2>Sign Up</h2>
+        <form id="registerForm">
+            <label for="username">Username:</label>
+            <input type="text" name="username" id="username" required><br><br>
+            <label for="password">Password:</label>
+            <input type="password" name="password" id="password" required><br><br>
+            <label for="token">Token:</label>
+            <input type="password" name="token" id="token" required><br><br>
+            <input type="button" name="Sign Up" onclick="submitForm()" value="Sign Up">
+        </form>
+        <div class="error">
+                    </div>
+        <div class="link">
+            Already have an account? <a href="/login">Log In</a>
+            <label for="register_status" id="register_status" style="color: red;"></label>
+        </div>
+        
+        <div class="homepage-button">
+            <a href="/">Home Page</a>
+        </div>
+    </div>
+    <script>
+        function submitForm(){
+            var form = document.getElementById("registerForm")
+            var formData = new FormData(form)
+            fetch("/register",{
+                method: "POST",
+                headers: {'Content-Type':'application/x-www-form-urlencoded'},
+                body: new URLSearchParams(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success){
+                    window.location.href = "/login"
+                } else document.getElementById("register_status").innerText = data.message
+            })
+            .catch(err => {
+                console.error(err)
+            })
+        }
+        document.getElementById('token').addEventListener('keyup', function(event) {
+        if (event.keyCode === 13) {
+            event.preventDefault();
+            submitForm();
+        }
+        });
+    </script>
+</body>
+</html>
