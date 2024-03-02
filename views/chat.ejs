@@ -16,6 +16,7 @@
         <a href="/blog"><img src="/img/blog_icon.png" alt="Blog"></a>
         <a href="/profile"><img src="/img/account_icon.png" alt="Profile"></a>
         <a href="/home"><img src="/img/icons8-home-50.png" alt="Home"></a>
+        <a href="/logout"><img src="/img/logout.png" alt="Logout"></a>
     </div>
 
     <div id="notification-container" class="notification-container"></div>
@@ -33,10 +34,10 @@
             <label>History:</label><br><br>
             <div id="chat-history" class="chat-history"></div><br>
             <label>Groups: </label><br><br>
-            <div id="chat-button" class="chat-button" onclick="showGroupMessage()">
-                <span id="chat-button-name-global" class="chat-button-name">Global Chat</span>
-                <span id="chat-button-last-msg-global" class="chat-button-last-msg" style="white-space: nowrap;overflow: hidden; text-overflow: ellipsis;"></span>
-                <span id="chat-button-date-global" class="chat-button-date"></span>
+            <div id="chat-button" class="chat-button" onclick="getGroupMessage()">
+                <span id="chat-button-name-group" class="chat-button-name">Group Chat</span>
+                <span id="chat-button-last-msg-group" class="chat-button-last-msg" style="white-space: nowrap;overflow: hidden; text-overflow: ellipsis;"></span>
+                <span id="chat-button-date-group" class="chat-button-date"></span>
             </div>
             <br><label>Users: </label>
             <div id="user-list"></div>
@@ -44,7 +45,7 @@
 
         <div class="right-panel">
             <div class="group-panel"><img id="group-img" src="/img/user.png" height="25" width="25"><span
-                    id="group-name"></span><span class="group-online" id="group-online"></span></div>
+                    id="receiverName"></span><span class="group-online" id="group-online"></span></div>
             <div id="messages" class="messages">
 
                 <ul id="messagesList"></ul>
@@ -57,8 +58,10 @@
             </div>
             <div class="input-container">
                 <form id="form">
+                    <input type="file" id="imageInput" name="image" accept="image/*">
                     <input id="send-msg-input" autocomplete="off" class="input" placeholder="Type a message" />
                     <button id="send-msg-button" class="button"><img src="/img/send.png" width="20" height="20"></button>
+                    <label for="imageUploadLabel" id="imageUploadLabel"></label>
                 </form>
             </div>
         </div>
@@ -68,7 +71,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/script/he.js"></script>
     <script src="/script/sweetalert2.js"></script>
-    <script src="https://rawgit.com/leizongmin/js-xss/master/dist/xss.js"></script>
+    <script src="/script/xss.js"></script>
 
     <script>
         const current_username = document.getElementById("username");
@@ -76,7 +79,7 @@
         const messagesList = document.getElementById("messagesList");
         const searchUser = document.getElementById("search-user")
         const userList = document.getElementById("user-list")
-        const receiverName = document.getElementById("group-name")
+        const receiverName = document.getElementById("receiverName")
         const indexAd = document.getElementById("indexAd")
         const sendButton = document.getElementById("send-msg-button")
         const sendInput = document.getElementById("send-msg-input")
@@ -84,6 +87,8 @@
         const chatHistory = document.getElementById("chat-history")
         const userInput = document.getElementById('search-user');
         const groupOnline = document.getElementById('group-online')
+        const imageInput = document.getElementById('imageInput')
+        const imageUploadLabel = document.getElementById('imageUploadLabel')
         const socket = io()
         let debounceTimeout
 
@@ -97,13 +102,17 @@
         sendInput.style.display = 'none'
         groupImg.style.display = 'none'
         searchUser.innerText = ''
+        imageInput.style.display = 'none'
 
         $(function () {
 
-            $('form').submit(function (e) {
+            $('form').submit( e => {
                 e.preventDefault();
-                if (document.getElementById("send-msg-input").value?.trim() !== '') {
-                    if (receiverName.innerText == 'Global Chat') {
+                if(imageInput.files.length){
+                    imageUpload()
+                }
+                else if (document.getElementById("send-msg-input").value?.trim() !== '') {
+                    if (receiverName.innerText == 'Group Chat') {
                         socket.emit('group message', $('#send-msg-input').val(), current_username.innerText, receiverName.innerText)
                     } else {
                         socket.emit('private message', $('#send-msg-input').val(), current_username.innerText, receiverName.innerText)
@@ -117,7 +126,7 @@
             });
 
             socket.on('group message', function (msg, sender, receiver, dateNow) {
-                if (receiverName.innerText == 'Global Chat') {
+                if (receiverName.innerText == 'Group Chat') {
                     printMessages(msg, sender, receiver, dateNow)
                 } else {
                     addNotification(`group[${sender}]`,msg)
@@ -135,7 +144,7 @@
             })
 
             socket.on('online', function (online) {
-                if (receiverName.innerText !== 'Global Chat'){
+                if (receiverName.innerText !== 'Group Chat'){
                     groupOnline.innerText = `Online: ${online}`
                 }
             })
@@ -158,6 +167,12 @@
                     
                 }
             })
+
+            socket.on('new file', (msg, sender, receiver, dateNow) => {
+                if(receiverName.innerText == sender || receiverName.innerText == receiver) {
+                    printFiles(msg, sender, receiver, dateNow)
+                }
+            })
         });
 
 
@@ -167,10 +182,11 @@
             sendInput.style.display = ''
             messagesList.innerHTML = ''
             indexAd.innerHTML = ''
+            imageInput.style.display = ''
         }
 
 
-        function showPrivateMessages(receiver) {
+        function getPrivateMessages(receiver) {
             clearDisplay()
             receiverName.innerText = receiver
             fetch(`/getPrivateMessages/${receiver}`)
@@ -182,17 +198,20 @@
                 })
                 .then(data => {
                     data.messages.forEach(msgData => {
-                        printMessages(he.decode(msgData.msg), he.decode(msgData.sender), he.decode(msgData.receiver), msgData.time)
+                        if(msgData.type !== 'image'){
+                            printMessages(he.decode(msgData.msg), he.decode(msgData.sender), he.decode(msgData.receiver), msgData.time)
+                        } else {
+                            printFiles(he.decode(msgData.msg), he.decode(msgData.sender), he.decode(msgData.receiver), msgData.time)
+                        }
                     })
 
-                    listItems = messagesList.getElementsByTagName('li')
-                    lastItem  = listItems[listItems.length - 1]
 
 
                     if(data.readby && data.readby.read && lastItem.className == 'senderMessage'){
                         printReadAt(data.readby.time)
                     }
                     socket.emit('readAt', receiver, current_username.innerText, true) // read by current username
+
                 })
                 .catch(error => {
                     console.error(error)
@@ -200,7 +219,7 @@
         }
 
 
-        function showGroupMessage() {
+        async function getGroupMessage() {
             fetch(`/getGroupMessages`)
                 .then(response => {
                     if (!response.ok) {
@@ -217,9 +236,14 @@
                         });                      
                     } else {
                         clearDisplay()
-                        receiverName.innerText = 'Global Chat'
+                        receiverName.innerText = 'Group Chat'
                         data.messages.forEach(msgData => {
-                            printMessages(he.decode(msgData.msg), he.decode(msgData.sender), he.decode(msgData.receiver), msgData.time)
+                            if(msgData.type !== 'image'){
+                                printMessages(he.decode(msgData.msg), he.decode(msgData.sender), he.decode(msgData.receiver), msgData.time)
+                            } else {
+                                printFiles(he.decode(msgData.msg), he.decode(msgData.sender), he.decode(msgData.receiver), msgData.time)
+                            }
+
                         })
                     }
                 })
@@ -246,7 +270,7 @@
                                 var userButton = document.createElement('button')
                                 userButton.id = userButton.innerText = he.decode(user['username'])
                                 userButton.onclick = function() {
-                                    showPrivateMessages(userButton.innerText);
+                                    getPrivateMessages(userButton.innerText);
                                 };
 
                                 userList.appendChild(userButton)
@@ -261,7 +285,7 @@
 
 
         function getChatHistory() {
-            fetch(`/chat-history/${current_username.innerText}`)
+            fetch(`/chat-history`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -290,7 +314,7 @@
                         
 
                         chatButton.onclick = function() {
-                            showPrivateMessages(this.id);
+                            getPrivateMessages(this.id);
                         };
 
                         chatButtonLastMsg.innerText = `${he.decode(tempMsg['sender'])}: ${he.decode(tempMsg['msg'])}`
@@ -303,11 +327,11 @@
                     })
 
 
-                    data.global.forEach(tempMsg => {
+                    data.group.forEach(tempMsg => {
                         var msgTime = new Date(tempMsg['time'])
                         
-                        const lastMsg = document.getElementById('chat-button-last-msg-global')
-                        const dateMsg = document.getElementById('chat-button-date-global')
+                        const lastMsg = document.getElementById('chat-button-last-msg-group')
+                        const dateMsg = document.getElementById('chat-button-date-group')
 
                         if (tempMsg['sender'] == current_username.innerText) {
                             tempMsg['sender'] = 'you'
@@ -342,8 +366,8 @@
 
         function typingAnimation(isTypingStatus){
             let chatType = 'Pm'
-            if(receiverName.innerText == 'Global Chat') {
-                chatType = 'Global Chat'
+            if(receiverName.innisTypingStatuserText == 'Group Chat') {
+                chatType = 'Group Chat'
             }    
             if (isTypingStatus == "full" && sendInput.value !== ''){
                 socket.emit('typing', chatType, current_username.innerText, receiverName.innerText, "true")
@@ -400,8 +424,8 @@
             notification.style.opacity = '0';
             setTimeout(() => {
                 container.removeChild(notification);
-            }, 1500); // Opacity animasyonu tamamlandıktan sonra elemanı kaldır
-            }, 2000); // 3 saniye sonra kaybolma işlemi başlar
+            }, 1500); 
+            }, 2000); 
         }
 
         function printMessages(message, sender, receiver, dateNow) {
@@ -430,11 +454,12 @@
 
             listElement.append(spanSender, br, spanMessage, spanDateNow)
             messagesList.appendChild(listElement)
-            listElement.scrollIntoView(true)
 
             if(document.getElementById('readAt')){
                 document.getElementById('readAt').remove()
             }
+
+            listElement.scrollIntoView(true)
         }
 
 
@@ -445,6 +470,130 @@
             readAt.innerText = `read at ${dateNow.getHours() + ":" + dateNow.getMinutes()}`
             readAt.className = 'readAt'
             messagesList.appendChild(readAt)
+            readAt.scrollIntoView(true)
+        }
+
+        function imageUpload() {
+
+            if(!imageInput.files.length) {
+                imageUploadLabel.style.color = 'red'
+                imageUploadLabel.innerText = 'Please select a file'
+                return
+            }
+
+            const formData = new FormData()
+            formData.append('image', imageInput.files[0])
+
+            fetch(`/upload/${receiverName.innerText}`, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    imageUploadLabel.style.color = 'green'
+                } else {
+                    imageUploadLabel.style.color = 'red'
+                }
+
+                imageInput.value = ''
+                imageUploadLabel.innerText = data.message
+            })
+            .catch(error => console.warn(error))
+        }
+
+
+        function printFiles(fileName, sender, receiver, dateNow) {
+            if(receiverName.innerText == 'Group Chat') {
+                //Group Chat Static Directory
+                dateNow = new Date(dateNow)
+                const listElement = document.createElement('li')
+                const spanSender = document.createElement('span')
+                const br = document.createElement('br')
+                const spanImage = document.createElement('span')
+                const spanDateNow = document.createElement('span')
+                const img = document.createElement('img')
+
+                spanSender.className = 'sender'
+                spanImage.className = 'message'
+                spanDateNow.className = 'dateNow'
+                img.className = 'img'
+                img.onload = scrollToLastItem()
+
+                if (sender == current_username.innerText) {
+                    listElement.className = 'senderMessage'
+                    
+                } else {
+                    listElement.className = 'receiverMessage'
+                    socket.emit('readAt', receiverName.innerText , current_username.innerText, true)
+                }
+
+                img.src = `/uploads-static/${fileName}`
+                spanSender.innerText = sender
+                spanDateNow.innerText = `${dateNow.getHours() + ":" + dateNow.getMinutes()}`
+
+                spanImage.appendChild(img)
+                listElement.append(spanSender, br, spanImage, spanDateNow)
+                messagesList.appendChild(listElement)
+
+                if(document.getElementById('readAt')){
+                    document.getElementById('readAt').remove()
+                }
+
+
+            } else {
+                //Private Chat API
+                dateNow = new Date(dateNow)
+                let apiCheck
+                const listElement = document.createElement('li')
+                const spanSender = document.createElement('span')
+                const br = document.createElement('br')
+                const spanImage = document.createElement('span')
+                const spanDateNow = document.createElement('span')
+                const img = document.createElement('img')
+
+                spanSender.className = 'sender'
+                spanImage.className = 'message'
+                spanDateNow.className = 'dateNow'
+                img.className = 'img'
+                img.onload = scrollToLastItem()
+
+                if (sender == current_username.innerText) {
+                    listElement.className = 'senderMessage'
+                    apiCheck = receiverName.innerText
+
+                } else {
+                    listElement.className = 'receiverMessage'
+                    apiCheck = sender
+                    socket.emit('readAt', receiverName.innerText , current_username.innerText, true)
+                }
+
+                img.src = `/uploads?filename=${fileName}&receiver=${apiCheck}`
+                spanSender.innerText = sender
+                spanDateNow.innerText = `${dateNow.getHours() + ":" + dateNow.getMinutes()}`
+
+                spanImage.appendChild(img)
+                listElement.append(spanSender, br, spanImage, spanDateNow)
+                messagesList.appendChild(listElement)
+
+                if(document.getElementById('readAt')){
+                    document.getElementById('readAt').remove()
+                }
+
+            }
+        }
+
+        function scrollToLastItem() {
+        
+                setTimeout(() => {
+                    const ul = document.querySelector('#messagesList'); // 'ul' elementini seç
+                    const lastLi = ul.lastElementChild; // 'ul'nin son çocuğunu bul, yani son 'li' elementi
+                    if (lastLi) {
+                        lastLi.scrollIntoView({ behavior: 'smooth', block: 'end' })
+                    }
+                }, 500)
+                
+            
         }
 
         document.addEventListener('DOMContentLoaded', () => {

@@ -16,12 +16,42 @@ typing ok
 mesajlari karsilikli yap ok         
 read ok
 msg notifiaction ok 
+image upload ok
+iframe koruma ok
+csrf koruma ok
+routes olarak yaz ok 
+last message scroll
 
-File Upload 
-csrf koruma 
-iframe koruma 
 profile photo 
+logout button
+profile bilgileri
+link embed
+mesaj begenme
+emoji
 E2EE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
