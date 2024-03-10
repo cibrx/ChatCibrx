@@ -1,7 +1,7 @@
 const express = require('express');
 const session = require('express-session');
 const http = require('http');
-const socketIO = require('socket.io');
+const socketIO = require('socket.io')
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
@@ -82,7 +82,7 @@ app.use(rootRoutes)
 app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   next();
-});
+})
 
 
 //GET
