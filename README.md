@@ -3,8 +3,9 @@
 ChatCibrx is an open-source, localhost-running chat application built using Node.js, Express, EJS, and MongoDB. It's designed to facilitate real-time communication through both group and private messaging. The application includes a unique feature where the first user registered as 'admin' is automatically granted administrative privileges. Moreover, it hosts a bot within group chats, which users can interact with by issuing the `/help` command to discover more about the available commands and features.
 
 <img src="https://github.com/LegendMan46/ChatCibrx/blob/master/public/img/indexAd.png">
-## Features
 
+## Features
+- **Rate Limiting**: Manages API calls, ensures service reliability, maintains security.
 - **Real-Time Messaging**: Support for both private and group chats.
 - **Built-in Bot**: A chat bot available in group chats to guide users through commands and features.
 - **Admin Privileges**: Automatic admin rights granted to the first user registered with the username 'admin'.
