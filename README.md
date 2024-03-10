@@ -20,14 +20,16 @@ Before you begin, ensure you have the following installed:
 ## Installation
 
 Follow these steps to set up the ChatCibrx on your local machine:
-
-
-```bash
+```sh
 git clone https://github.com/LegendMan46/ChatCibrx.git
 cd ChatCibrx
-npm install
+npm install @rednexie/cache.db bcrypt colors cookie-session ejs express-fileupload express-rate-limit express-session express he ip mongodb socket.io xss
 ```
 
+- When the installation is done, start the bot:
+```sh
+node .
+```
 The chat application will now be running at `http://localhost:3000`.
 
 ## Setting Up MongoDB Collections
