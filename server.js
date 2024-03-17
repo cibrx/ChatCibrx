@@ -12,13 +12,6 @@ const rateLimit = require('express-rate-limit');
 const cache = require('@rednexie/cache.db')
 const bot = require('./external_modules/bot.js')
 
-// *** Routes *** //
-const authenticationRoutes = require('./Routes/authentication.js')
-const blogRoutes = require('./Routes/blog.js')
-const chatRoutes = require('./Routes/chat.js')
-const uploadRoutes = require('./Routes/uploads.js');
-const rootRoutes = require('./Routes/roots.js')
-
 const {updateReadStatus, getReadStatus} = require('./external_modules/chatInternalFuncs.js')
 
 const port = 4049
@@ -52,7 +45,7 @@ const sessionConfig = {
 };
 
 
-/*
+
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 15 minutes
   max: 90, // limit each IP to 100 requests per windowMs
@@ -60,7 +53,7 @@ const limiter = rateLimit({
     return
   }
 });
-*/
+
 
 // ******** Express Config ******** //
 
@@ -77,15 +70,12 @@ app.use(blogRoutes)
 app.use(chatRoutes)
 app.use(uploadRoutes)
 app.use(rootRoutes)
-//app.use('/', limiter);
+app.use('/', limiter);
 
 app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   next();
 })
-
-
-//GET
 
 
 io.on('connection', async (socket) => {
@@ -96,7 +86,6 @@ io.on('connection', async (socket) => {
     const username = cache.get(ip)
     cache.set(username+'id', socket.id)
     const resultsDb = await users_db.find({ username: username }).toArray();
-
     socket.join(username)
 
     socket.on('group message', async function (msg, sender, receiver) {
@@ -161,6 +150,7 @@ io.on('connection', async (socket) => {
         }
       }
     })
+    
     socket.on('readAt', async (sender, reader, read) => {
       if(reader == username || sender == username){
         let dateNow = Date.now()
