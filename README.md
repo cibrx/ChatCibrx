@@ -26,11 +26,11 @@ cd ChatCibrx
 npm install @rednexie/cache.db bcrypt colors cookie-session ejs express-fileupload express-rate-limit express-session express he ip mongodb socket.io xss
 ```
 
-- When the installation is done, start the bot:
+- When the installation is done, start the chat:
 ```sh
 node .
 ```
-The chat application will now be running at `http://localhost:3000`.
+The chat application will now be running at `http://localhost:3000` and also on your local IP.
 
 ## Setting Up MongoDB Collections
 
@@ -44,7 +44,7 @@ These collections will automatically be populated as you use the application.
 
 ## How to Use
 
-After starting the application, navigate to `http://localhost:3000` on your web browser to access the ChatCibrx. Register as a new user, or log in if you already have an account, and explore the features available. Remember, the first user to register as 'admin' will receive administrative privileges.
+After starting the application, navigate to `http://localhost:3000` or your local IP on your web browser to access the ChatCibrx. Register as a new user, or log in if you already have an account, and explore the features available. Remember, the first user to register as 'admin' will receive administrative privileges.
 
 ## Contributing
 
