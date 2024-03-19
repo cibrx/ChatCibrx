@@ -52,6 +52,6 @@ We welcome contributions to ChatCibrx! If you have suggestions or improvements, 
 
 ## License
 
-ChatCibrx is licensed under the GNU General Public License (GPL), version 3. See the [LICENSE](https://github.com/LegendMan46/ChatCibrx/blob/master/LICENSE)https://github.com/LegendMan46/ChatCibrx/blob/master/LICENSE file for more details.
+ChatCibrx is licensed under the GNU General Public License (GPL), version 3. See the [LICENSE](https://github.com/LegendMan46/ChatCibrx/blob/master/LICENSE) file for more details.
    
    
