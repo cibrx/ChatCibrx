@@ -54,7 +54,6 @@ const limiter = rateLimit({
   }
 });
 
-
 // ******** Express Config ******** //
 
 app.set('trust-proxy', 'loopback')
@@ -65,11 +64,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'))
 app.use(session(sessionConfig))
-app.use(authenticationRoutes)
-app.use(blogRoutes)
-app.use(chatRoutes)
-app.use(uploadRoutes)
-app.use(rootRoutes)
 app.use('/', limiter);
 
 app.use((req, res, next) => {
