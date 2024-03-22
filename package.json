@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "push": "git add . && git commit && git push"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "LegendMan46",
+  "license": "GNU General Public License v3.0",
   "dependencies": {
     "@rednexie/cache.db": "^1.0.1",
     "bcrypt": "^5.1.1",
